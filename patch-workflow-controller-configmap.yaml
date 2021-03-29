@@ -1,0 +1,3 @@
+data:
+  artifactRepository: |
+    archiveLogs: false
