@@ -57,7 +57,7 @@ kubectl get -n argo svc nfs-server |grep ClusterIP | awk '{ print $3; }'
 ```
 12. Now you can submit your workflow:
 ```
-argo submit -n argo argo-wf-cms.yaml
+argo submit -n argo parallel-GluGluToHToTauTau.yaml
 ```
 13. Check that your workflow is runing:
 ```
