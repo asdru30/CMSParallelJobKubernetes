@@ -1,0 +1,17 @@
+# pv-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pv-pod
+spec:
+  volumes:
+    - name: task-pv-storage
+      persistentVolumeClaim:
+        claimName: nfs-1
+  containers:
+    - name: pv-container
+      image: busybox
+      command: ["tail", "-f", "/dev/null"]
+      volumeMounts:
+        - mountPath: /mnt/data
+          name: task-pv-storage
