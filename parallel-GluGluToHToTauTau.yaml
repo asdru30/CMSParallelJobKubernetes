@@ -1,0 +1,281 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: nanoaod-argo-
+spec:
+  entrypoint: parallel-worker
+
+  podGC:
+    # pod gc strategy must be one of the following
+    # * OnPodCompletion - delete pods immediately when pod is completed (including errors/failures)
+    # * OnPodSuccess - delete pods immediately when pod is successful
+    # * OnWorkflowCompletion - delete pods when workflow is completed
+    # * OnWorkflowSuccess - delete pods when workflow is successful
+    strategy: OnPodSuccess
+
+  parallelism: 120
+
+  volumes:
+  - name: task-pv-storage
+    persistentVolumeClaim:
+      claimName: nfs-1
+
+  templates:
+  - name: nanoaod-argo
+    inputs:
+      parameters:
+      - name: files
+      - name: it
+    script:
+      imagePullPolicy: Never
+      image: cmsopendata/cmssw_5_3_32
+      command: [sh]
+      source: |
+        source /opt/cms/entrypoint.sh
+        sudo chown $USER /mnt/vol
+        mkdir workspace
+        cd workspace
+        git clone git://github.com/cms-opendata-analyses/AOD2NanoAODOutreachTool  AOD2NanoAOD
+        cd AOD2NanoAOD
+        scram b -j8
+        varfiles="{{inputs.parameters.files}}"
+        sed -i 's,files =,#files =,g' configs/simulation_cfg.py
+        sed -i 's,files.extend,#files.extend,g' configs/simulation_cfg.py
+        sed -i "s,*files,'$varfiles',g" configs/simulation_cfg.py
+
+        cmsRun configs/simulation_cfg.py
+        iterator="{{inputs.parameters.it}}"
+        cp output.root /mnt/vol/GGH2TT$iterator.root
+        echo  ls -l /mnt/vol
+        ls -l /mnt/vol
+      volumeMounts:
+      - name: task-pv-storage
+        mountPath: /mnt/vol
+
+  - name: parallel-worker
+    dag:
+      tasks:
+      - name: m1
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/00175829-B4F5-E311-B7C6-002481E0D6A6.root}, {name: it, value: 1}]
+      - name: m2
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/0207FA29-D4F5-E311-A67B-0025901D4B00.root}, {name: it, value: 2}]
+      - name: m3
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/08553187-E6F5-E311-A881-0025901D493C.root}, {name: it, value: 3}]
+      - name: m4
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/0A38B332-C5F5-E311-B805-003048F30422.root}, {name: it, value: 4}]
+      - name: m5
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/12871A76-E6F5-E311-9EA2-0025907DCA9C.root}, {name: it, value: 5}]
+      - name: m6
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/2A1FB560-CAF5-E311-984A-00266CF2718C.root}, {name: it, value: 6}]
+      - name: m7
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/2A3BD6B3-CBF5-E311-8F80-00266CFFA6F0.root}, {name: it, value: 7}]
+      - name: m8
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/386EE48F-E6F5-E311-840C-002481E0EA06.root}, {name: it, value: 8}]
+      - name: m9
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/38F53E65-CBF5-E311-AE57-00266CF32E2C.root}, {name: it, value: 9}]
+      - name: m10
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/3AC430AF-D7F5-E311-8142-002590AC4FEC.root}, {name: it, value: 10}]
+      - name: m11
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/3ACA2C6C-E6F5-E311-8473-0025907DCA9C.root}, {name: it, value: 11}]
+      - name: m12
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/3E746D87-E6F5-E311-922B-002590AC4B5C.root}, {name: it, value: 12}]
+      - name: m13
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/40557CBD-D7F5-E311-8AC5-0025904B12B2.root}, {name: it, value: 13}]
+      - name: m14
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/4255CBCB-F0F5-E311-928D-002590A2CD68.root}, {name: it, value: 14}]
+      - name: m15
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/468BF4EF-F0F5-E311-9D24-0025904B5FAE.root}, {name: it, value: 15}]
+      - name: m16
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/4C9F6C67-F6F5-E311-8F3F-0025904B0FB4.root}, {name: it, value: 16}]
+      - name: m17
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/4E7B9F5B-F6F5-E311-B62D-002481E0D448.root}, {name: it, value: 17}]
+      - name: m18
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/52077DC1-D7F5-E311-94D5-0025904B12B2.root}, {name: it, value: 18}]
+      - name: m19
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/52FCBBB4-CEF5-E311-99EE-002590DB9278.root}, {name: it, value: 19}]
+      - name: m20
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/54058370-E6F5-E311-839B-0025907DCA9C.root}, {name: it, value: 20}]
+      - name: m21
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/5687508D-CDF5-E311-9F9A-002590AC4C3E.root}, {name: it, value: 21}]
+      - name: m22
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/5C8C56A8-C9F5-E311-92FC-002590AC5074.root}, {name: it, value: 22}]
+      - name: m23
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/6494727A-D5F5-E311-9462-002590DB9278.root}, {name: it, value: 23}]
+      - name: m24
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/6689186D-E6F5-E311-A443-00266CFFA6A8.root}, {name: it, value: 24}]
+      - name: m25
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/684AE0BE-D7F5-E311-A7F1-0025904B12B2.root}, {name: it, value: 25}]
+      - name: m26
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/6A48C3EB-D1F5-E311-A71A-003048F0E1EA.root}, {name: it, value: 26}]
+      - name: m27
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/6AC7CDED-F0F5-E311-B924-0025904B5FAE.root}, {name: it, value: 27}]
+      - name: m28
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/6E5051BA-D7F5-E311-A6E7-0025904B12B2.root}, {name: it, value: 28}]
+      - name: m29
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/70E5EC2C-D3F5-E311-93A7-0025907DC9AC.root}, {name: it, value: 29}]
+      - name: m30
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/7E2C3BC1-D7F5-E311-B8B1-0025904B12B2.root}, {name: it, value: 30}]
+      - name: m31
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/8802FE6E-E6F5-E311-B6BB-0025907FD34C.root}, {name: it, value: 31}]
+      - name: m32
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/8C42FDC1-D7F5-E311-B77F-0025904B12B2.root}, {name: it, value: 32}]
+      - name: m33
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/8C6B9D97-D4F5-E311-8FD8-0025904B141E.root}, {name: it, value: 33}]
+      - name: m34
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/944BEC69-D0F5-E311-8CA6-002590A2CCFE.root}, {name: it, value: 34}]
+      - name: m35
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/9E43AB94-DAF5-E311-9B09-00266CF32A00.root}, {name: it, value: 35}]
+      - name: m36
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/9EC1C302-D1F5-E311-9BEE-00215AD4D6AE.root}, {name: it, value: 36}]
+      - name: m37
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/A4775EB8-D3F5-E311-A49A-002590AC539E.root}, {name: it, value: 37}]
+      - name: m38
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/A4FFFB75-E6F5-E311-8822-0025907DCA9C.root}, {name: it, value: 38}]
+      - name: m39
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/A68DCF03-D7F5-E311-8617-002590A2CD44.root}, {name: it, value: 39}]
+      - name: m40
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/A89A8E76-E6F5-E311-8AD6-0025907DCA9C.root}, {name: it, value: 40}]
+      - name: m41
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/AA869F8E-D4F5-E311-A574-002590DB924E.root}, {name: it, value: 41}]
+      - name: m42
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/AEAE8258-B5F5-E311-BE7F-002590AC4B5C.root}, {name: it, value: 42}]
+      - name: m43
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/C2AF5A2C-EFF5-E311-BA8A-002590A2CD68.root}, {name: it, value: 43}]
+      - name: m44
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/C4B34A7B-E6F5-E311-845C-0025907DCA9C.root}, {name: it, value: 44}]
+      - name: m45
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/CA50DC23-CDF5-E311-8734-002590AC4C3E.root}, {name: it, value: 45}]
+      - name: m46
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/CC0C6BB3-E6F5-E311-A363-00266CF32BC4.root}, {name: it, value: 46}]
+      - name: m47
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/D48290EB-CEF5-E311-9EEB-0025901D4124.root}, {name: it, value: 47}]
+      - name: m48
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/DA0CA19D-D1F5-E311-B430-002590AC4B5A.root}, {name: it, value: 48}]
+      - name: m49
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/DCFB6875-E6F5-E311-AEB7-0025907DCA9C.root}, {name: it, value: 49}]
+      - name: m50
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/E2C355C4-D7F5-E311-930D-0025904B12B2.root}, {name: it, value: 50}]
+      - name: m51
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/E4AB879F-EFF5-E311-BBE8-002590A2CD68.root}, {name: it, value: 51}]
+      - name: m52
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/E8E1FD70-E6F5-E311-A817-0025907DCA9C.root}, {name: it, value: 52}]
+      - name: m53
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/F45C35C1-D7F5-E311-B801-0025904B12B2.root}, {name: it, value: 53}]
+      - name: m54
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/F4F28962-F6F5-E311-8050-003048D437EC.root}, {name: it, value: 54}]
+      - name: m55
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/F66D1F88-E6F5-E311-B6AA-00215AD4D6AE.root}, {name: it, value: 55}]
+      - name: m56
+        template: nanoaod-argo
+        arguments:
+          parameters: [{name: files, value: root://eospublic.cern.ch//eos/opendata/cms/MonteCarlo2012/Summer12_DR53X/GluGluToHToTauTau_M-125_8TeV-powheg-pythia6-tauPolarOff/AODSIM/PU_S10_START53_V19-v1/00000/FA6BC783-E6F5-E311-97BA-002481E0DE14.root}, {name: it, value: 56}]
