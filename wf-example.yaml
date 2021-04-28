@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: nanoaod-argo-
+spec:
+  entrypoint: nanoaod-argo
+  templates:
+  - name: nanoaod-argo
+    script:
+      imagePullPolicy: Never
+      image: cmsopendata/cmssw_5_3_32
+      command: [sh]
+      source: |
+        
+        source /opt/cms/entrypoint.sh
+        git clone git://github.com/cms-legacydata-analyses/PhysObjectExtractorTool.git
+        cd PhysObjectExtractorTool
+        cd PhysObjectExtractor
+        scram b -j8
+        ln -s python/electronanalyzer_cfg.py .
+        cmsRun electronanalyzer_cfg.py
+        

@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: nanoaod-merge-
+spec:
+  entrypoint: nanoaod-merge
+  volumes:
+  - name: task-pv-storage
+    persistentVolumeClaim:
+      claimName: nfs-1
+  templates:
+  - name: nanoaod-merge
+    script:
+      imagePullPolicy: Never
+      image: cmsopendata/cmssw_5_3_32
+      command: [sh]
+      source: |
+
+        source /opt/cms/entrypoint.sh
+        sudo chown $USER /mnt/vol
+        cd /mnt/vol/
+        git clone git://github.com/asdru30/CMSParallelJobKubernetes.git
+        cp CMSParallelJobKubernetes/merge/mergeTauPlusXB.C mergeTauPlusXB.C
+        cp CMSParallelJobKubernetes/merge/mergeTauPlusXC.C mergeTauPlusXC.C
+        cp CMSParallelJobKubernetes/merge/mergeGluGluToHToTauTau.C mergeGluGluToHToTauTau.C
+        cp CMSParallelJobKubernetes/merge/mergeVBF_HToTauTau.C mergeVBF_HToTauTau.C
+        cp CMSParallelJobKubernetes/merge/mergeDYJetsToLL.C mergeDYJetsToLL.C
+        cp CMSParallelJobKubernetes/merge/mergeTTbar.C mergeTTbar.C
+        cp CMSParallelJobKubernetes/merge/mergeW1JetsToLNu.C mergeW1JetsToLNu.C
+        cp CMSParallelJobKubernetes/merge/mergeW2JetsToLNu.C mergeW2JetsToLNu.C
+        cp CMSParallelJobKubernetes/merge/mergeW3JetsToLNu.C mergeW3JetsToLNu.C
+        root -b -l mergeTauPlusXB.C+
+        root -b -l mergeTauPlusXC.C+
+        root -b -l mergeGluGluToHToTauTau.C+
+        root -b -l mergeVBF_HToTauTau.C+
+        root -b -l mergeDYJetsToLL.C+
+        root -b -l mergeTTbar.C+
+        root -b -l mergeW1JetsToLNu.C+
+        root -b -l mergeW2JetsToLNu.C+
+        root -b -l mergeW3JetsToLNu.C+
+
+      volumeMounts:
+      - name: task-pv-storage
+        mountPath: /mnt/vol

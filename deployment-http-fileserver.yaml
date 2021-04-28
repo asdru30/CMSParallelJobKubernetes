@@ -1,0 +1,35 @@
+# deployment-http-fileserver.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: http-fileserver
+  name: http-fileserver
+spec:
+  replicas: 1
+  strategy: {}
+  selector:
+    matchLabels:
+      service: http-fileserver
+  template:
+    metadata:
+      labels:
+        service: http-fileserver
+    spec:
+      volumes:
+      - name: volume-output
+        persistentVolumeClaim:
+          claimName: nfs-1
+      - name: basic-config
+        configMap:
+          name: basic-config
+      containers:
+      - name: file-storage-container
+        image: nginx
+        ports:
+        - containerPort: 80
+        volumeMounts:
+          - mountPath: "/usr/share/nginx/html"
+            name: volume-output
+          - name: basic-config
+            mountPath: /etc/nginx/conf.d
